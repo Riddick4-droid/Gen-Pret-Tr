@@ -1,0 +1,85 @@
+
+project:
+  name: "decoder_transformer"
+  seed: 42
+  device: "cuda"   # or "cpu", but overridden by CLI/env
+
+
+data:
+  pretrain:
+    kaggle_dataset: "vadimkurochkin/wikitext-103"
+    train_file: "wiki.train.tokens"
+    valid_file: "wiki.valid.tokens"
+    test_file:  "wiki.test.tokens"
+  qa:
+    kaggle_dataset: "buildformacarov/squad-20"
+    train_file: "train-v2.0.json"          # raw SQuAD
+    processed_file: "qa_data.json"         # flat JSON (generated)
+  max_seq_len: 512
+
+
+tokenizer:
+  type: "gpt2"                          # HuggingFace tokenizer name
+  pad_token: "<|pad|>"
+  special_tokens:                       # for Q&A formatting
+    question: "<|question|>"
+    context: "<|context|>"
+    answer: "<|answer|>"
+  unanswerable_text: "unanswerable"
+
+
+model:
+  d_model: 768
+  num_heads: 12
+  num_layers: 12
+  d_ff: 3072        # 4 * d_model
+  dropout: 0.1
+  max_seq_len: 512  # must match data.max_seq_len
+
+
+pretrain:
+  micro_batch_size: 8
+  effective_batch_size: 32
+  learning_rate: 3.0e-4
+  num_epochs: 3
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_clip: 1.0
+  early_stop_patience: 2
+  mixed_precision: true
+
+
+finetune:
+  micro_batch_size: 16
+  effective_batch_size: 32
+  learning_rate: 1.0e-4
+  num_epochs: 5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  grad_clip: 1.0
+  early_stop_patience: 2
+  mixed_precision: true
+
+
+lora:
+  enabled: false                       # set true via CLI
+  rank: 8
+  alpha: 16.0
+  dropout: 0.0
+  target_modules: ["W_q", "W_v"]      # which linear layers to adapt
+
+
+paths:
+  cache_dir: "~/.cache/decoder_transformer"
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+
+mlflow:
+  enabled: true                    
+  tracking_uri: "http://localhost:8000"
+  experiment_name: "decoder_transformer"
+
+
+api:
+  host: "0.0.0.0"
+  port: 8000
